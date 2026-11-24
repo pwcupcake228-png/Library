@@ -1,0 +1,51 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+
+  // No "model" is set on purpose. Pick any model you have access to with /models
+  // (free models included). Subagents use the model of the session that starts them.
+
+  // Sessions start with the built-in "build" agent, which can edit files and run commands.
+  // Switch to the read-only "plan" agent with Shift+Tab (or /agents).
+  "default_agent": "build",
+
+  // Extra files loaded into every agent's context, in addition to AGENTS.md.
+  // glossary.md keeps the agent from mixing up similar words of your domain.
+  "instructions": ["docs/requirements.md", "docs/architecture.md", "docs/glossary.md"],
+
+  // Rules are checked from top to bottom and the LAST matching rule wins,
+  // so broad rules come first and exceptions follow them.
+  // Effects: "allow" (just do it), "ask" (you approve each time), "deny" (never).
+  "permissions": [
+    // Ask before reading or changing anything outside this repository.
+    { "action": "external_directory", "resource": "*", "effect": "ask" },
+
+    // Shell commands need your approval by default...
+    { "action": "shell", "resource": "*", "effect": "ask" },
+
+    // ...except routine, safe commands used for development and verification.
+    { "action": "shell", "resource": "npm run *", "effect": "allow" },
+    { "action": "shell", "resource": "npm test *", "effect": "allow" },
+    { "action": "shell", "resource": "npx playwright test *", "effect": "allow" },
+    { "action": "shell", "resource": "git status *", "effect": "allow" },
+    { "action": "shell", "resource": "git diff *", "effect": "allow" },
+    { "action": "shell", "resource": "git log *", "effect": "allow" },
+    { "action": "shell", "resource": "git show *", "effect": "allow" },
+    { "action": "shell", "resource": "ls *", "effect": "allow" },
+    { "action": "shell", "resource": "pwd", "effect": "allow" },
+
+    // Agents never push. You review the commits and push them yourself.
+    { "action": "shell", "resource": "git push *", "effect": "deny" },
+  ],
+
+  // Our own subagents (frontend, backend, reviewer) are defined in .opencode/agents/.
+  "agents": {
+    "plan": {
+      // The built-in plan agent cannot edit files. Also stop it from handing work to
+      // subagents that can (frontend, backend, general); read-only "explore" is fine.
+      "permissions": [
+        { "action": "subagent", "resource": "*", "effect": "deny" },
+        { "action": "subagent", "resource": "explore", "effect": "allow" },
+      ],
+    },
+  },
+}
